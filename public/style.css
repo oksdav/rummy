@@ -1,0 +1,126 @@
+html,
+body {
+    -webkit-user-select: none;
+    user-select: none;
+    background-color: #FFC080;
+    margin: 1px;
+    overflow: hidden;
+}
+
+button {
+    box-sizing: content-box;
+}
+
+button:enabled {
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: not-allowed;
+}
+
+input {
+    font-family: inherit;
+}
+
+#root {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#players {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.player {
+    border: 1px solid black;
+    width: 15rem;
+    min-width: 5rem;
+    padding: 0.1rem;
+    display: flex;
+    align-items: center;
+}
+
+.name {
+    font-size: 2rem;
+    overflow-x: auto;
+}
+
+#board {
+    flex-grow: 1;
+    border: 1px solid black;
+    overflow-x: auto;
+    display: flex;
+    flex-flow: column wrap;
+    align-content: flex-start;
+}
+
+.meld {
+    min-width: 4rem;
+    width: fit-content;
+    height: 5rem;
+    margin: 0.5rem;
+    display: flex;
+}
+
+#hand {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-wrapper {
+    width: fit-content;
+    height: fit-content;
+    overflow: hidden;
+}
+
+.card-wrapper:last-of-type,
+.card-wrapper:hover {
+    overflow: visible;
+}
+
+#actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    column-gap: 0.5rem;
+}
+
+.action {
+    font-size: 2rem;
+    width: 5rem;
+    height: 5rem;
+    padding: 0;
+    appearance: none;
+}
+
+#deck {
+    display: flex;
+}
+
+.card-back {
+    background:
+        linear-gradient(45deg, pink 20%, transparent 20%, transparent 80%, pink 80%, pink 100%),
+        linear-gradient(135deg, pink 20%, transparent 20%, transparent 80%, pink 80%, pink 100%);
+    background-size: 1rem 1rem;
+}
+
+.card {
+    flex-shrink: 0;
+    background-color: white;
+    border: 1px solid black;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 2rem;
+    width: 4rem;
+    height: 5rem;
+    padding: 0.1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
