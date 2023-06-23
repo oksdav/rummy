@@ -124,18 +124,18 @@ export default function Game() {
         }
     }
 
-    function next() {
+    function revert() {
+        send(Action.Revert);
+        playedHand.current = [];
+    }
+
+    function endTurn(action: Action) {
         if (board.every(meld => meld.cards.length > 2 || meld.cards.length === 0)) {
-            send(Action.Next);
+            send(action);
             playedHand.current = [];
         } else {
             doInvalidTransition();
         }
-    }
-
-    function revert() {
-        send(Action.Revert);
-        playedHand.current = [];
     }
 
     function move(from: string, to: string, card: Card) {
@@ -205,9 +205,9 @@ export default function Game() {
                     : <>
                         <button id='sort' className='action' disabled={false} onClick={sort} >{order === Order.Suit ? '♢♡' : '1 2'}</button>
                         <button id='revert' className='action' disabled={!isTurn} onClick={revert} >⟲</button>
-                        <button id='next' className='action' disabled={!isTurn || !(hasPlayed || isDeckEmpty)} onClick={next} >✓</button>
+                        <button id='next' className='action' disabled={!isTurn || !(hasPlayed || isDeckEmpty)} onClick={() => endTurn(Action.Next)} >✓</button>
                         <div id='deck'>
-                            <button id='draw' className='card card-back' disabled={!isTurn || hasPlayed || isDeckEmpty} onClick={() => send(Action.Draw)} >{deckSize}</button>
+                            <button id='draw' className='card card-back' disabled={!isTurn || hasPlayed || isDeckEmpty} onClick={() => endTurn(Action.Draw)} >{deckSize}</button>
                             {moveAnimation && moveAnimation.from === 'deck' &&
                                 <div id={moveAnimation.card.pack + moveAnimation.card.suit + moveAnimation.card.rank}
                                     className='card card-back'

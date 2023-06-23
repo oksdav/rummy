@@ -272,27 +272,6 @@ function move(player: Player, game: Game, { from, to, card }: Move): Game | unde
     }
 }
 
-function draw(player: Player, game: Game): Game | undefined {
-    if (game.playedHand.length === 0 && game.deck.length > 0) {
-        const [draw, ...deck] = game.deck;
-        const players = game.players.map(p => p === player ? { ...p, cards: [...p.cards, draw] } : p);
-        const turn = (game.turn + 1) % game.players.length;
-        send(player, { draw: draw });
-        return {
-            ...game,
-            turn: turn,
-            players: players,
-            deck: deck,
-            currentBoard: game.currentBoard.filter(meld => meld.cards.length > 0),
-            move: {
-                from: 'deck',
-                to: player.id,
-                card: { pack: 0, suit: 'S', rank: 0 },
-            },
-        };
-    }
-}
-
 function revert(player: Player, game: Game): Game {
     const hand = [...player.cards, ...game.playedHand];
     const players = game.players.map(p => p === player ? { ...p, cards: hand } : p);
@@ -318,6 +297,29 @@ function next(player: Player, game: Game): Game | undefined {
             board: board,
             currentBoard: board,
             playedHand: [],
+        };
+    }
+    send(player, { invalid: true });
+}
+
+function draw(player: Player, game: Game): Game | undefined {
+    const board = game.currentBoard.filter(meld => meld.cards.length > 0);
+    if ((game.playedHand.length === 0 && game.deck.length > 0) && isBoardValid(board)) {
+        const [draw, ...deck] = game.deck;
+        const players = game.players.map(p => p === player ? { ...p, cards: [...p.cards, draw] } : p);
+        const turn = (game.turn + 1) % game.players.length;
+        send(player, { draw: draw });
+        return {
+            ...game,
+            turn: turn,
+            players: players,
+            deck: deck,
+            currentBoard: board,
+            move: {
+                from: 'deck',
+                to: player.id,
+                card: { pack: 0, suit: 'S', rank: 0 },
+            },
         };
     }
     send(player, { invalid: true });
