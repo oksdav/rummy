@@ -1,5 +1,6 @@
 {
   "name": "rummy",
+  "type": "module",
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -11,7 +12,7 @@
     "esbuild": "^0.19.2"
   },
   "scripts": {
-    "prestart": "esbuild src/client/index.jsx --bundle --minify --outfile=public/index.js & esbuild src/server/game.ts --bundle --platform=node --packages=external --outfile=main.js",
+    "prestart": "esbuild src/client/index.jsx --bundle --minify --outfile=public/index.js & esbuild src/server/game.ts --bundle --platform=node --format=esm --packages=external --outfile=main.js",
     "start": "node main.js"
   }
 }
