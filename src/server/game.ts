@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { start, Socket } from './main.ts';
+import { start, Socket } from './server.ts';
 import { isEqual, addToMeld, removeFromMeld, Message, Action, Options, Name, PlayerInfo, Card, Meld, MeldType, Move } from '../common.ts';
 
 type Player = {
