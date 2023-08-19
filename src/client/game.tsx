@@ -33,7 +33,7 @@ export default function Game() {
     const [moveAnimation, setMoveAnimation] = useState<Move>();
 
     useEffect(() => {
-        ws.current = new WebSocket('wss://' + window.location.host + window.location.pathname);
+        ws.current = new WebSocket((window.location.hostname === 'localhost' ? 'ws://' : 'wss://') + window.location.host + window.location.pathname);
         return () => ws.current?.close();
     }, []);
 
