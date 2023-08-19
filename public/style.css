@@ -48,6 +48,7 @@ input {
 .name {
     font-size: 2rem;
     overflow-x: auto;
+    white-space: nowrap;
 }
 
 #board {
