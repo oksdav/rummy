@@ -19,7 +19,7 @@ enum Order {
 export default function Game() {
     const ws = useRef<WebSocket>();
     const playedHand = useRef<Card[]>([]);
-    const [name, setName] = useState(getCookieValue(document.cookie, 'name') ?? '');
+    const [name, setName] = useState(getCookieValue(document.cookie, 'name'));
     const [myId, setMyId] = useState('');
     const [turnId, setTurnId] = useState('');
     const [gameOver, setGameOver] = useState(true);

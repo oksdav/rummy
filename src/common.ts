@@ -59,8 +59,8 @@ export type Message = {
     move?: Move;
 };
 
-export function getCookieValue(cookie: string, key: string): string | undefined {
-    return cookie.split("; ").find(kv => kv.startsWith(key))?.split("=")[1];
+export function getCookieValue(cookie: string, key: string): string {
+    return cookie.split("; ").find(kv => kv.startsWith(key))?.split("=")[1] ?? '';
 }
 
 export function isEqual(card1: Card, card2: Card): boolean {
