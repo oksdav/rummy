@@ -1,9 +1,9 @@
-import { ServerWebSocket } from 'bun';
-import { WebSocketData, server } from './main.ts';
+import crypto from 'crypto';
+import { start, Socket } from './main.ts';
 import { isEqual, addToMeld, removeFromMeld, Message, Action, Options, Name, PlayerInfo, Card, Meld, MeldType, Move } from '../common.ts';
 
 type Player = {
-    ws: ServerWebSocket<WebSocketData>;
+    ws: Socket;
     id: string;
     cards: Card[];
 };
@@ -28,15 +28,22 @@ const DEAL = 13,
 
 const games: Map<string, Game> = new Map();
 
-function send(player: Player, message: Message) {
-    player.ws.send(JSON.stringify(message));
-}
+const server = start({
+    generateGameId,
+    join: ws => receive(ws, { action: Action.Join }),
+    play: (ws, message) => receive(ws, JSON.parse(message)),
+    leave: ws => receive(ws, { action: Action.Leave }),
+});
 
 function publish(gameId: string, message: Message) {
     server.publish(gameId, JSON.stringify(message));
 }
 
-export function generateGameId() {
+function send(player: Player, message: Message) {
+    player.ws.send(JSON.stringify(message));
+}
+
+function generateGameId() {
     let gameId;
     do {
         gameId = Math.random().toString(36).slice(-4);
@@ -44,7 +51,7 @@ export function generateGameId() {
     return gameId;
 }
 
-export async function receive(ws: ServerWebSocket<WebSocketData>, message: { action: Action, options?: Options }) {
+async function receive(ws: Socket, message: { action: Action, options?: Options }) {
     const game = games.get(ws.data.gameId) ?? {
         gameOver: true,
         players: [],
@@ -111,7 +118,7 @@ function playersInfo(game: Game): PlayerInfo[] {
     }));
 }
 
-function join(game: Game, ws: ServerWebSocket<WebSocketData>): Game | undefined {
+function join(game: Game, ws: Socket): Game | undefined {
     ws.subscribe(ws.data.gameId);
 
     if (game.gameOver && game.players.length < 52 * PACKS / DEAL) {
@@ -139,9 +146,7 @@ function join(game: Game, ws: ServerWebSocket<WebSocketData>): Game | undefined 
     }
 }
 
-async function leave(game: Game, ws: ServerWebSocket<WebSocketData>): Promise<Game | undefined> {
-    ws.unsubscribe(ws.data.gameId);
-
+async function leave(game: Game, ws: Socket): Promise<Game | undefined> {
     if (game.gameOver) {
         const players = game.players.filter(player => player.ws.data.playerToken !== ws.data.playerToken);
         return {
@@ -154,7 +159,7 @@ async function leave(game: Game, ws: ServerWebSocket<WebSocketData>): Promise<Ga
         setTimeout(() => {
             const changedGame = games.get(ws.data.gameId);
             const player = changedGame?.players.find(player => player.ws.data.playerToken === ws.data.playerToken);
-            if (changedGame && player && player.ws.readyState === WebSocket.CLOSED) {
+            if (changedGame && player) {
                 const players = changedGame.players.filter(p => p !== player);
                 if (players.length === 0) {
                     resolve({

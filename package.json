@@ -12,6 +12,6 @@
   },
   "scripts": {
     "prestart": "bun build src/client/index.jsx --outdir public",
-    "start": "bun run src/server/main.ts"
+    "start": "bun run src/server/game.ts"
   }
 }
