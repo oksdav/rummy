@@ -1,4 +1,6 @@
+import fs from 'fs/promises';
 import crypto from 'crypto';
+import { App, HttpResponse, WebSocket, SHARED_COMPRESSOR } from 'uWebSockets.js';
 import { getCookieValue } from '../common.ts';
 
 export type Socket = {
@@ -19,48 +21,63 @@ export function start({ generateGameId, join, play, leave }: {
     play: (ws: Socket, message: string) => void,
     leave: (ws: Socket) => void,
 }) {
-    const server = Bun.serve<UserData>({
-        fetch(req, server) {
-            const pathname = new URL(req.url).pathname.substring(1);
-
-            if (req.headers.get('upgrade') === 'websocket') {
-                const cookie = req.headers.get('Cookie') ?? '';
-                const playerToken = getCookieValue(cookie, 'token') || crypto.randomUUID();
-                const playerName = getCookieValue(cookie, 'name');
-                const success = server.upgrade(req, {
-                    headers: { 'Set-Cookie': `token=${playerToken}; SameSite=Strict; Max-Age=31536000` },
-                    data: {
-                        gameId: pathname,
-                        playerToken: playerToken,
-                        playerName: playerName,
-                    },
-                });
-                return success ? undefined : new Response('WebSocket upgrade error', { status: 400 });
-            }
-
-            if (!pathname) {
-                return Response.redirect('/' + generateGameId());
-            }
-
-            const filename = [
-                'style.css',
-                'index.js',
-                'favicon.ico',
-                'turn.mp3',
-            ].includes(pathname) ? pathname : 'index.html';
-
-            const file = Bun.file('public/' + filename);
-            return new Response(file, { headers: { 'Content-Type': file.type } });
+    const server = App().ws<UserData>('/*', {
+        upgrade: (res, req, context) => {
+            const cookie = req.getHeader('cookie');
+            const playerToken = getCookieValue(cookie, 'token');
+            const playerName = getCookieValue(cookie, 'name');
+            res.upgrade<UserData>({
+                gameId: req.getUrl().substring(1),
+                playerToken: playerToken,
+                playerName: playerName,
+            },
+                req.getHeader('sec-websocket-key'),
+                req.getHeader('sec-websocket-protocol'),
+                req.getHeader('sec-websocket-extensions'),
+                context);
         },
-        websocket: {
-            open: join,
-            message: (ws, message) => play(ws, message as string),
-            close: leave,
-            perMessageDeflate: true,
-        }
-    });
+        open: ws => join(castWebSocket(ws)),
+        message: (ws, message) => play(castWebSocket(ws), Buffer.from(message).toString()),
+        close: ws => leave(castWebSocket(ws)),
+        compression: SHARED_COMPRESSOR,
+    }).get('/', res => {
+        res.writeStatus('302').writeHeader('location', '/' + generateGameId()).end();
+    }).get('/style.css', (res, req) => {
+        sendFile(res, req.getUrl(), 'text/css');
+    }).get('/index.js', (res, req) => {
+        sendFile(res, req.getUrl(), 'text/javascript');
+    }).get('/favicon.ico', (res, req) => {
+        sendFile(res, req.getUrl(), 'image/x-icon');
+    }).get('/turn.mp3', (res, req) => {
+        sendFile(res, req.getUrl(), 'audio/mpeg');
+    }).get('/*', (res, req) => {
+        const cookie = req.getHeader('cookie');
+        const playerToken = getCookieValue(cookie, 'token') || crypto.randomUUID();
+        res.writeHeader('Set-Cookie', `token=${playerToken}; SameSite=Strict; Max-Age=31536000`);
+        sendFile(res, '/index.html', 'text/html');
+    }).listen(3000, () => { });
 
     return {
-        publish: (topic: string, message: string) => server.publish(topic, message, true),
+        publish: (topic: string, message: string) => server.publish(topic, message, false, true),
+    };
+}
+
+async function sendFile(res: HttpResponse, fileName: string, contentType: string) {
+    res.onAborted(() => {
+        res.aborted = true;
+    });
+    const data = await fs.readFile('public' + fileName);
+    if (!res.aborted) {
+        res.cork(() => {
+            res.writeStatus('200').writeHeader('Content-Type', contentType).end(data);
+        });
+    }
+}
+
+function castWebSocket(ws: WebSocket<UserData>): Socket {
+    return {
+        data: ws.getUserData(),
+        send: (message: string) => ws.send(message, false, true),
+        subscribe: (topic: string) => ws.subscribe(topic),
     };
 }

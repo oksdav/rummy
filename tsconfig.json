@@ -13,8 +13,5 @@
     "forceConsistentCasingInFileNames": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "types": [
-      "bun-types"
-    ]
   }
 }
