@@ -55,7 +55,7 @@ export function start({ generateGameId, join, play, leave }: {
         const playerToken = getCookieValue(cookie, 'token') || crypto.randomUUID();
         res.writeHeader('Set-Cookie', `token=${playerToken}; SameSite=Strict; Max-Age=31536000`);
         sendFile(res, '/index.html', 'text/html');
-    }).listen(3000, () => { });
+    }).listen(Number(process.env.PORT) || 3000, () => { });
 
     return {
         publish: (topic: string, message: string) => server.publish(topic, message, false, true),
