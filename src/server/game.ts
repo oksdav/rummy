@@ -154,36 +154,6 @@ async function leave(game: Game, ws: Socket): Promise<Game | undefined> {
             players: players,
         };
     }
-
-    return new Promise<Game | undefined>(resolve => {
-        setTimeout(() => {
-            const changedGame = games.get(ws.data.gameId);
-            const player = changedGame?.players.find(player => player.ws.data.playerToken === ws.data.playerToken);
-            if (changedGame && player) {
-                const players = changedGame.players.filter(p => p !== player);
-                if (players.length === 0) {
-                    resolve({
-                        ...changedGame,
-                        players: []
-                    });
-                } else {
-                    const isTurn = player.id === changedGame.players[changedGame.turn].id;
-                    const turn = changedGame.turn % players.length;
-                    const playerPlayedHand = isTurn ? changedGame.playedHand : [];
-                    resolve({
-                        ...changedGame,
-                        players: players,
-                        turn: turn,
-                        deck: shuffle([...changedGame.deck, ...player.cards, ...playerPlayedHand]),
-                        playedHand: isTurn ? [] : changedGame.playedHand,
-                        currentBoard: isTurn ? changedGame.board : changedGame.currentBoard,
-                    });
-                }
-            } else {
-                resolve(undefined);
-            }
-        }, 300_000);
-    });
 }
 
 function deal(game: Game): Game | undefined {
