@@ -5,6 +5,7 @@ import { isEqual, addToMeld, removeFromMeld, Message, Action, Options, Name, Pla
 type Player = {
     ws: Socket;
     id: string;
+    connected: boolean;
     cards: Card[];
 };
 
@@ -102,7 +103,7 @@ async function receive(ws: Socket, message: { action: Action, options?: Options 
         publish(ws.data.gameId, {
             turnId: changedGame.players[changedGame.turn].id,
             gameOver: changedGame.gameOver,
-            players: playersInfo(changedGame),
+            players: playersInfo(changedGame.players),
             board: changedGame.currentBoard,
             deckSize: changedGame.deck.length,
             move: changedGame.move,
@@ -110,8 +111,8 @@ async function receive(ws: Socket, message: { action: Action, options?: Options 
     }
 }
 
-function playersInfo(game: Game): PlayerInfo[] {
-    return game.players.map(player => ({
+function playersInfo(players: Player[]): PlayerInfo[] {
+    return players.map(player => ({
         id: player.id,
         name: player.ws.data.playerName,
         cardsAmount: player.cards.length,
@@ -123,7 +124,7 @@ function join(game: Game, ws: Socket): Game | undefined {
 
     if (game.gameOver && game.players.length < 52 * PACKS / DEAL) {
         const otherPlayers = game.players.filter(player => player.ws.data.playerToken !== ws.data.playerToken);
-        const players = [...otherPlayers, { ws: ws, id: crypto.randomUUID(), cards: [] }];
+        const players = [...otherPlayers, { ws: ws, id: crypto.randomUUID(), connected: true, cards: [] }];
         players.forEach(player => send(player, { playerId: player.id }));
         return {
             ...game,
@@ -139,14 +140,14 @@ function join(game: Game, ws: Socket): Game | undefined {
             hand: player.cards,
             turnId: game.players[game.turn].id,
             gameOver: game.gameOver,
-            players: playersInfo(game),
+            players: playersInfo(game.players),
             board: game.currentBoard,
             deckSize: game.deck.length,
         });
     }
 }
 
-async function leave(game: Game, ws: Socket): Promise<Game | undefined> {
+function leave(game: Game, ws: Socket): Game {
     if (game.gameOver) {
         const players = game.players.filter(player => player.ws.data.playerToken !== ws.data.playerToken);
         return {
@@ -154,6 +155,46 @@ async function leave(game: Game, ws: Socket): Promise<Game | undefined> {
             players: players,
         };
     }
+
+    setTimeout(() => {
+        const changedGame = games.get(ws.data.gameId);
+        const player = changedGame?.players.find(player => player.ws.data.playerToken === ws.data.playerToken);
+        if (changedGame && player && !player.connected) {
+            const players = changedGame.players.filter(p => p !== player);
+            if (players.length === 0) {
+                games.delete(ws.data.gameId);
+            } else {
+                const isTurn = player.id === changedGame.players[changedGame.turn].id;
+                const turn = changedGame.turn % players.length;
+                const playerPlayedHand = isTurn ? changedGame.playedHand : [];
+                const board = isTurn ? changedGame.board : changedGame.currentBoard;
+                const deck = shuffle([...changedGame.deck, ...player.cards, ...playerPlayedHand]);
+                games.set(ws.data.gameId, {
+                    ...changedGame,
+                    players: players,
+                    turn: turn,
+                    deck: deck,
+                    playedHand: isTurn ? [] : changedGame.playedHand,
+                    currentBoard: board,
+                });
+                publish(ws.data.gameId, {
+                    turnId: players[turn].id,
+                    players: playersInfo(players),
+                    board: board,
+                    deckSize: deck.length,
+                });
+            }
+        }
+    }, 300_000);
+
+    const players = game.players.map(player =>
+        player.ws.data.playerToken === ws.data.playerToken
+            ? { ...player, connected: false }
+            : player);
+    return {
+        ...game,
+        players: players,
+    };
 }
 
 function deal(game: Game): Game | undefined {
