@@ -135,6 +135,7 @@ function join(game: Game, ws: Socket): Game | undefined {
     const player = game.players.find(player => player.ws.data.playerToken === ws.data.playerToken);
     if (player) {
         player.ws = ws;
+        player.connected = true;
         send(player, {
             playerId: player.id,
             hand: player.cards,
