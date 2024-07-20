@@ -56,11 +56,10 @@ export function start({ generateGameId, join, play, leave }: {
             open: join,
             message: (ws, message) => play(ws, message as string),
             close: leave,
-            perMessageDeflate: true,
         }
     });
 
     return {
         publish: (topic: string, message: string) => server.publish(topic, message, true),
     };
-}
+}3030
