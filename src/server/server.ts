@@ -62,4 +62,4 @@ export function start({ generateGameId, join, play, leave }: {
     return {
         publish: (topic: string, message: string) => server.publish(topic, message, true),
     };
-}3030
+}
