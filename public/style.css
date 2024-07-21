@@ -47,6 +47,7 @@ input {
 
 .name {
     font-size: 2rem;
+    min-width: 0;
     overflow-x: auto;
     white-space: nowrap;
 }
