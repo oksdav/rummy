@@ -22,6 +22,9 @@ export function start({ generateGameId, join, play, leave }: {
     const server = Bun.serve<UserData>({
         fetch(req, server) {
             const pathname = new URL(req.url).pathname.substring(1);
+            if (!pathname) {
+                return Response.redirect('/' + generateGameId());
+            }
 
             if (req.headers.get('upgrade') === 'websocket') {
                 const cookie = req.headers.get('Cookie') ?? '';
@@ -36,10 +39,6 @@ export function start({ generateGameId, join, play, leave }: {
                     },
                 });
                 return success ? undefined : new Response('WebSocket upgrade error', { status: 400 });
-            }
-
-            if (!pathname) {
-                return Response.redirect('/' + generateGameId());
             }
 
             const filename = [
