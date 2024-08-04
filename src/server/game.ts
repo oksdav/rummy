@@ -5,6 +5,7 @@ import { isEqual, addToMeld, removeFromMeld, Message, Action, Options, Name, Pla
 type Player = {
     ws: Socket;
     id: string;
+    timeoutId?: Timer;
     cards: Card[];
 };
 
@@ -16,7 +17,7 @@ type Game = {
     deck: Card[];
     currentBoard: Meld[];
     playedHand: Card[];
-    move: Move | undefined;
+    move?: Move;
 };
 
 const DEAL = 13,
@@ -133,6 +134,7 @@ function join(game: Game, ws: Socket): Game | undefined {
 
     const player = game.players.find(player => player.ws.data.playerToken === ws.data.playerToken);
     if (player) {
+        clearTimeout(player.timeoutId);
         player.ws = ws;
         send(player, {
             playerId: player.id,
@@ -156,7 +158,7 @@ async function leave(game: Game, ws: Socket): Promise<Game | undefined> {
     }
 
     return new Promise<Game | undefined>(resolve => {
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             const changedGame = games.get(ws.data.gameId);
             const player = changedGame?.players.find(player => player.ws.data.playerToken === ws.data.playerToken);
             if (changedGame && player) {
@@ -164,7 +166,7 @@ async function leave(game: Game, ws: Socket): Promise<Game | undefined> {
                 if (players.length === 0) {
                     resolve({
                         ...changedGame,
-                        players: []
+                        players: [],
                     });
                 } else {
                     const isTurn = player.id === changedGame.players[changedGame.turn].id;
@@ -183,6 +185,11 @@ async function leave(game: Game, ws: Socket): Promise<Game | undefined> {
                 resolve(undefined);
             }
         }, 300_000);
+
+        const player = game.players.find(player => player.ws.data.playerToken === ws.data.playerToken);
+        if (player) {
+            player.timeoutId = timeoutId;
+        }
     });
 }
 
