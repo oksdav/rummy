@@ -1,8 +1,10 @@
-FROM oven/bun:1.1-alpine
+FROM oven/bun:1.1-slim
 WORKDIR /app
-RUN apk update && \
-    apk upgrade && \
-    apk add --no-cache git
+RUN apt update && \
+    apt upgrade -y && \
+    apt install -y git && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*
 RUN git clone --depth 1 https://github.com/oksdav/rummy.git
 WORKDIR /app/rummy
 RUN bun install --production
